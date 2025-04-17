@@ -1,4 +1,4 @@
-## Ephemeral DevBox with persistent $HOME using Scaleway + Tailscale and Terraform
+## Ephemeral DevBox with persistent $HOME on Scaleway + terraform + Tailscale
 
 This little toy repo implements an ephemeral development system with a peristent,
 encrypted $HOME and secure access via Tailscale.
@@ -9,7 +9,7 @@ to a full fleged linux system while on-the-go withough having to permanantly ren
 a server and creating only monthly costs in the <1ct range is unused seemed like a fun idea.
 
 
-#### Prerequisites
+### Prerequisites
 - Accounts:
   - Scaleway
   - Tailscale
@@ -22,8 +22,16 @@ a server and creating only monthly costs in the <1ct range is unused seemed like
   - Scaleway API-Key/Secret
   - Tailscale OAuth-Client Key/Secret with "auth_keys" scope
 
+#### Checkout prep
+After cloning the repositoty you neeed to initialise terraform once:
 
-##### Scaleway prep
+`terraform init`
+
+Next, rename `terraform.tfvars.example` to `terraform.tfvars` and ajust the values to match your setup.
+
+Finally, run `terraform plan` (this step needs to be repeated whenever you change the .tfvars)
+
+#### Scaleway prep
 The one step I clound't automate yet is the required initial snapshot used to
 setup the user's persistent $HOME.
 
@@ -34,19 +42,28 @@ This can however easily be done using the scaleway cli (make sure to use the sam
 # and set tmp_block_id to it's UUID
 # In this case it'll be 5k IOPS and 25G in size - adjust as desired
 
-$ tmp_block_id=$(scw block volume create perf-iops=5000 from-empty.size=25G | awk '/^ID/{ print $2 }')
+tmp_block_id=$(scw block volume create perf-iops=5000 from-empty.size=25G | awk '/^ID/{ print $2 }')
 
 # create the initial - empty - snapshot from our storage
 
-$ scw block snapshot create volume_id=$tmp_block_id name=same-as-scw_persistent_data_name
+scw block snapshot create volume_id=$tmp_block_id name=same-as-scw_persistent_data_name
 
 # remove the block volume
-$ scw block volume delete $tmp_block_id
+scw block volume delete $tmp_block_id
 ```
 
-#### Optional extras
+### Usage
 
-##### VSCode Tunnel
+To start the devbox instance run `terraform apply -auto-approve`.
+If terraform reported no issues it should only take a minute or two until your devbox appears in you tailnet.
+
+To destroy the devbox instance run `terraform destroy -auto-approve`.
+_It might take a few minutes for thee debox to be removed from your tailnet and starting a new instance in the meantime
+might lead to <hostname>-2, <hostname>-3, ... situations. I'm looking into improving this behaviour_
+
+### Optional extras
+
+#### VSCode Tunnel
 cloud-init will take care of preparing the system and also installs vscode-cli with an enabled code-tunnel service.
 
 For this to be usable you will have to authenticate the tunnel once by performing these steps:
