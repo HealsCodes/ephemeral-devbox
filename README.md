@@ -6,7 +6,7 @@ encrypted $HOME and secure access via Tailscale.
 I built it as a more flexible alternative to GitPod / CodeSpaces since a good deal
 of the time I might have my iPad around but not my MacBook and having access (mosh/ssh/vscode-tunnel!)
 to a full fleged linux system while on-the-go withough having to permanantly rent
-a server and creating only monthly costs in the <1ct range is unused seemed like a fun idea.
+a server and creating only monthly costs in the <1ct range if unused seemed like a fun idea.
 
 
 ### Prerequisites
@@ -58,8 +58,11 @@ To start the devbox instance run `terraform apply -auto-approve`.
 If terraform reported no issues it should only take a minute or two until your devbox appears in you tailnet and accessible via tailnet-SSH.
 
 To destroy the devbox instance run `terraform destroy -auto-approve`.
-_It might take a few minutes for thee debox to be removed from your tailnet and starting a new instance in the meantime
-might lead to <hostname>-2, <hostname>-3, ... situations. I'm looking into improving this behaviour_
+
+_It might take a few minutes for the devbox to be removed from your tailnet and starting a new instance in the meantime
+might lead to <hostname>-2, <hostname>-3, ... situations._
+
+_I'm looking into improving this behaviour_
 
 ### Optional extras
 
