@@ -55,7 +55,7 @@ scw block volume delete $tmp_block_id
 ### Usage
 
 To start the devbox instance run `terraform apply -auto-approve`.
-If terraform reported no issues it should only take a minute or two until your devbox appears in you tailnet.
+If terraform reported no issues it should only take a minute or two until your devbox appears in you tailnet and accessible via tailnet-SSH.
 
 To destroy the devbox instance run `terraform destroy -auto-approve`.
 _It might take a few minutes for thee debox to be removed from your tailnet and starting a new instance in the meantime
@@ -76,7 +76,17 @@ For this to be usable you will have to authenticate the tunnel once by performin
 - Ctrl+C to stop code-tunnel
 - `sudo systemctl start code-tunnel@$USER`
 
-
 After these steps your code tunnel shoul be up and reachable as https://vscode.dev/tunnel/$HOST-$USER (so depending on whatever you set as variables for terraform).
 This state is als persisted in the user's home directory and will survive restarts of the environment.
 
+### Security Stuff
+
+> Is the instance exposed to the internet in any way?
+
+No, the only open port is the default wireguard port for tailscale.
+
+> Is the data inside of my $HOME safe?
+
+As safe as you make the `persistent_data_key` in your terraform.tfvars.
+On first lauch the block volume serving your $HOME is formatted using cyptsetup LUKS2 before anything is stored in it.
+While the devbox is offline all data for that volume resides in an encrypted snapshot on Scaleway's datacenter in Paris.
