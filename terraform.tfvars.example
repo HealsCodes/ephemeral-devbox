@@ -1,0 +1,11 @@
+scw_project_id           = "12345678-abcd-abcd-abcd-1234567890ab"
+scw_persistent_data_name = "devbox-persistent-snapshot"
+
+tailscale_client_id     = "1234567890abcdefg"
+tailscale_client_secret = "tskey-client-1234567890abcdefg-ABCDEFG1234567890abcdefg12345678"
+tailscale_host_hostname = "devbox"
+tailscale_host_tags     = [ "tag:server", "tag:ephemeral" ]
+
+persistent_data_key  = "my-very-secret-cruptluks key"
+persistent_data_user = "heals"
+

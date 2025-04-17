@@ -1,0 +1,93 @@
+#cloud-config
+
+packages_update: true
+packages_upgrade: true
+
+# install some base necessities
+packages:
+- apt-transport-https
+- ca-certificates
+- curl
+- cryptsetup-bin
+- software-properties-common
+- build-essential
+- git
+- tmux
+- nano
+- nvim
+- zsh
+  # use vscode from snap 
+- snap:
+  - [ code, --classic ]
+
+# create a default non-root user account that owns our persistent home data
+users:
+  - name: ${devbox_user}
+    gecos: DevBox Main Users
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    groups: sudo
+    homedir: /home/${devbox_user}
+    shell: /bin/zsh  
+
+hostname: ${tailscale_hostname}
+
+runcmd:
+  #
+  # add some swapspace
+  #
+  - fallocate -l 4G /swapspace
+  - chmod 0600 /swapspace
+  - mkswap /swapspace
+  - swapon /swapspace
+  #
+  # check if our persisten data volume is initialized and if no, do that
+  #
+  - echo -n '${crypt_home_key}' > /root/crypt_key && chmod 0600 /root/crypt_key
+  - cryptsetup open --type luks2 /dev/sdb crypthome --key-file /root/crypt_key || (cryptsetup luksFormat --type luks2 /dev/sdb /root/crypt_key && cryptsetup open --type luks2 /dev/sdb crypthome --key-file /root/crypt_key && mkfs.ext4 /dev/mapper/crypthome)
+  #
+  # mount the persisten home volume
+  # 
+  - mkdir -p /mnt/crypthome
+  - mount /dev/mapper/crypthome /mnt/crypthome
+  - mkdir -p /mnt/crypthome/${devbox_user}
+  - chown ${devbox_user}:${devbox_user} /mnt/crypthome/${devbox_user}
+  - mount --bind /mnt/crypthome/${devbox_user} /home/${devbox_user}
+  #
+  # install tailscale
+  # 
+  - sh -c 'curl -fsSL https://tailscale.com/install.sh | sh'
+  # patch the tailscale service unit to run as ephemeral node
+  - sed -i -e "s/--state=[^ ]\+/--state=mem/g" /usr/lib/systemd/system/tailscaled.service
+  - systemctl daemon-reload
+  - systemctl restart tailscaled
+  # connect to our tailnet with tailscale-SSH enabled
+  - tailscale up --auth-key=${tailscale_auth_key} --hostname=${tailscale_hostname}
+  - tailscale set --ssh --accept-dns=true --accept-routes=true --accept-risk=all
+  #
+  # add helix ppa and install helix editor
+  # 
+  - add-apt-repository ppa:maveonair/helix-editor
+  - apt update
+  - apt install helix
+  #
+  # setup and start the code-tunnel systemd service
+  #
+  - |
+    cat > /etc/systemd/system/code-tunnel@.service <<EOF
+    [Unit]
+    Description=Visual Studio Code Tunnel
+    After=network.target
+    StartLimitIntervalSec=0
+      
+    [Service]
+    Type=simple
+    Restart=always
+    RestartSec=10
+    User=%i
+    ExecStart=/snap/bin/code tunnel --name "${tailscale_hostname}-%i" --cli-data-dir "/home/%i/.vscode/cli" service internal-run
+
+    [Install]
+    WantedBy=default.target
+    EOF
+  - systemctl daemon-reload
+  - systemctl enable --now code-tunnel@${devbox_user}.service
